@@ -35,3 +35,40 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 # bird-app
+
+```
+bird-app
+├─ .next
+│  └─ types
+│     ├─ cache-life.d.ts
+│     ├─ routes.d.ts
+│     └─ validator.ts
+├─ AGENTS.md
+├─ CLAUDE.md
+├─ README.md
+├─ components.json
+├─ eslint.config.mjs
+├─ next.config.ts
+├─ package-lock.json
+├─ package.json
+├─ postcss.config.mjs
+├─ public
+│  ├─ file.svg
+│  ├─ globe.svg
+│  ├─ next.svg
+│  ├─ vercel.svg
+│  └─ window.svg
+├─ src
+│  ├─ app
+│  │  ├─ favicon.ico
+│  │  ├─ globals.css
+│  │  ├─ layout.tsx
+│  │  └─ page.tsx
+│  ├─ components
+│  │  └─ ui
+│  │     └─ button.tsx
+│  └─ lib
+│     └─ utils.ts
+└─ tsconfig.json
+
+```
