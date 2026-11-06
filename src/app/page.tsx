@@ -9,6 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Bird as BirdIcon,
   Plus,
   Search,
   Menu,
@@ -143,11 +151,12 @@ export default function Home() {
         <div className="container py-4 flex items-center justify-between mx-auto px-4">
           {/* Logo Brand */}
           <div className="flex items-center gap-3">
-            <img
-              src={ASSETS.logo}
-              alt="AviKenya Logo"
-              className="h-10 w-10 md:h-12 md:w-12 object-contain rounded-full border border-secondary/20 bg-card p-0.5"
-            />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-secondary/20 bg-card p-2 md:h-12 md:w-12">
+              <BirdIcon
+                aria-label="AviKenya"
+                className="h-full w-full text-primary"
+              />
+            </div>
             <div>
               <span className="font-serif text-xl md:text-2xl font-bold tracking-wider text-primary">
                 AviKenya
@@ -363,6 +372,18 @@ export default function Home() {
                 </button>
               )}
             </div>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="w-full rounded-full md:w-52">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="common">Common</SelectItem>
+                <SelectItem value="unique">Unique</SelectItem>
+                <SelectItem value="endangered">Endangered</SelectItem>
+                <SelectItem value="extinct">Extinct</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Grid of Birds */}
@@ -384,11 +405,12 @@ export default function Home() {
             {/* Column 1: Brand */}
             <div className="md:col-span-5 space-y-4">
               <div className="flex items-center gap-3">
-                <img
-                  src={ASSETS.logo}
-                  alt="AviKenya Logo"
-                  className="h-10 w-10 object-contain rounded-full bg-background p-0.5"
-                />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background p-2">
+                  <BirdIcon
+                    aria-label="AviKenya"
+                    className="h-full w-full text-primary"
+                  />
+                </div>
                 <span className="font-serif text-xl md:text-2xl font-bold tracking-wider text-white">
                   AviKenya
                 </span>

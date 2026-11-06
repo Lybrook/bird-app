@@ -74,10 +74,11 @@
  * - “data-only” → Place, Geometry utilities.
  */
 
-/// <reference types="@types/google.maps" />
+"use client";
 
-import { useEffect, useRef } from "react";
-import { usePersistFn } from "@/hooks/usePersistFn";
+/// <reference types="google.maps" />
+
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 declare global {
@@ -86,70 +87,140 @@ declare global {
   }
 }
 
-const API_KEY = import.meta.env.VITE_FRONTEND_FORGE_API_KEY;
-const FORGE_BASE_URL =
-  import.meta.env.VITE_FRONTEND_FORGE_API_URL ||
-  "https://forge.butterfly-effect.dev";
-const MAPS_PROXY_URL = `${FORGE_BASE_URL}/v1/maps/proxy`;
+const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+const MAPS_PROXY_URL =
+  process.env.NEXT_PUBLIC_GOOGLE_MAPS_PROXY_URL ||
+  "https://forge.butterfly-effect.dev/v1/maps/proxy";
+const DEFAULT_CENTER: google.maps.LatLngLiteral = {
+  lat: 37.7749,
+  lng: -122.4194,
+};
 
-function loadMapScript() {
-  return new Promise(resolve => {
+let mapScriptPromise: Promise<void> | undefined;
+
+function loadMapScript(): Promise<void> {
+  if (window.google?.maps) {
+    return Promise.resolve();
+  }
+
+  if (!API_KEY) {
+    return Promise.reject(
+      new Error("Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to enable the map.")
+    );
+  }
+
+  if (mapScriptPromise) {
+    return mapScriptPromise;
+  }
+
+  mapScriptPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = `${MAPS_PROXY_URL}/maps/api/js?key=${API_KEY}&v=weekly&libraries=marker,places,geocoding,geometry`;
+    const scriptUrl = new URL(
+      `${MAPS_PROXY_URL.replace(/\/+$/, "")}/maps/api/js`
+    );
+    scriptUrl.searchParams.set("key", API_KEY);
+    scriptUrl.searchParams.set("v", "weekly");
+    scriptUrl.searchParams.set(
+      "libraries",
+      "marker,places,geocoding,geometry"
+    );
+    script.src = scriptUrl.toString();
     script.async = true;
     script.crossOrigin = "anonymous";
     script.onload = () => {
-      resolve(null);
-      script.remove(); // Clean up immediately
+      script.remove();
+      if (window.google?.maps) {
+        resolve();
+      } else {
+        mapScriptPromise = undefined;
+        reject(new Error("Google Maps loaded without initializing its API."));
+      }
     };
     script.onerror = () => {
-      console.error("Failed to load Google Maps script");
+      script.remove();
+      mapScriptPromise = undefined;
+      reject(new Error("Failed to load the Google Maps script."));
     };
     document.head.appendChild(script);
   });
+
+  return mapScriptPromise;
 }
 
 interface MapViewProps {
   className?: string;
   initialCenter?: google.maps.LatLngLiteral;
   initialZoom?: number;
-  onMapReady?: (map: google.maps.Map) => void;
+  onMapReady?: (map: google.maps.Map) => void | (() => void);
 }
 
 export function MapView({
   className,
-  initialCenter = { lat: 37.7749, lng: -122.4194 },
+  initialCenter = DEFAULT_CENTER,
   initialZoom = 12,
   onMapReady,
 }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<google.maps.Map | null>(null);
-
-  const init = usePersistFn(async () => {
-    await loadMapScript();
-    if (!mapContainer.current) {
-      console.error("Map container not found");
-      return;
-    }
-    map.current = new window.google.maps.Map(mapContainer.current, {
-      zoom: initialZoom,
-      center: initialCenter,
-      mapTypeControl: true,
-      fullscreenControl: true,
-      zoomControl: true,
-      streetViewControl: true,
-      mapId: "DEMO_MAP_ID",
-    });
-    if (onMapReady) {
-      onMapReady(map.current);
-    }
-  });
+  const mapCleanup = useRef<(() => void) | undefined>(undefined);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    init();
-  }, [init]);
+    let cancelled = false;
+
+    const initializeMap = async () => {
+      await loadMapScript();
+      if (cancelled || !mapContainer.current) {
+        return;
+      }
+
+      const maps = window.google?.maps;
+      if (!maps) {
+        throw new Error("Google Maps is not available in the browser.");
+      }
+
+      map.current = new maps.Map(mapContainer.current, {
+        zoom: initialZoom,
+        center: initialCenter,
+        mapTypeControl: true,
+        fullscreenControl: true,
+        zoomControl: true,
+        streetViewControl: true,
+        mapId: "DEMO_MAP_ID",
+      });
+      mapCleanup.current = onMapReady?.(map.current) || undefined;
+    };
+
+    void initializeMap().catch((error: unknown) => {
+      console.error("Unable to initialize the Google Map.", error);
+      if (!cancelled) {
+        setLoadError(
+          error instanceof Error ? error.message : "Unable to initialize the map."
+        );
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      mapCleanup.current?.();
+      mapCleanup.current = undefined;
+      map.current = null;
+    };
+  }, [initialCenter, initialZoom, onMapReady]);
 
   return (
-    <div ref={mapContainer} className={cn("w-full h-[500px]", className)} />
+    <div
+      ref={mapContainer}
+      className={cn("relative h-[500px] w-full", className)}
+    >
+      {loadError && (
+        <div
+          role="alert"
+          className="absolute inset-0 flex items-center justify-center rounded-lg bg-muted p-6 text-center text-sm text-muted-foreground"
+        >
+          {loadError}
+        </div>
+      )}
+    </div>
   );
 }

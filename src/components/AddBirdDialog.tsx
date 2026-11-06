@@ -21,6 +21,17 @@ import {
 import { toast } from "sonner";
 import { Camera, Sparkles } from "lucide-react";
 
+type BirdStatus = "Common" | "Unique" | "Extinct" | "Endangered";
+
+function isBirdStatus(value: string): value is BirdStatus {
+  return (
+    value === "Common" ||
+    value === "Unique" ||
+    value === "Extinct" ||
+    value === "Endangered"
+  );
+}
+
 interface AddBirdDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -29,7 +40,7 @@ interface AddBirdDialogProps {
     scientificName: string;
     image: string;
     location: string;
-    status: "Common" | "Unique" | "Extinct" | "Endangered";
+    status: BirdStatus;
     details: string;
     contributor: string;
   }) => void;
@@ -43,9 +54,7 @@ export default function AddBirdDialog({
   const [name, setName] = useState("");
   const [scientificName, setScientificName] = useState("");
   const [location, setLocation] = useState("");
-  const [status, setStatus] = useState<
-    "Common" | "Unique" | "Extinct" | "Endangered"
-  >("Common");
+  const [status, setStatus] = useState<BirdStatus>("Common");
   const [details, setDetails] = useState("");
   const [contributor, setContributor] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -160,7 +169,11 @@ export default function AddBirdDialog({
               </Label>
               <Select
                 value={status}
-                onValueChange={(val: any) => setStatus(val)}
+                onValueChange={value => {
+                  if (isBirdStatus(value)) {
+                    setStatus(value);
+                  }
+                }}
               >
                 <SelectTrigger
                   id="status"
